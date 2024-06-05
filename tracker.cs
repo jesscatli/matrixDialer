@@ -1,3 +1,11 @@
+/*
+Programmer: Jess S. Catli II
+Project Name: matrixDialer
+Development Environment: C#.Net 
+Location: California, USA
+Date: 06/05/2024
+*/
+
 using System;
 using System.Drawing;
 using System.Windows.Forms;
