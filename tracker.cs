@@ -1,103 +1,104 @@
-/* Currently on Development 
-Programmer: Jess S. Catli II
-Date: 06/04/2024
-Project Name: matrixPhone
-Location: California, USA
-*/
 using System;
 using System.Drawing;
 using System.Windows.Forms;
 
-public class MyIndicator : Control
+// MyTracker: Custom control for tracking levels with visual indicators.
+public class MyTracker : Control
 {
-    private static Color clrBg;
-    private static Color clrFg;
-    private static Color clrSFg;
+    // Colors for background, active foreground, and inactive foreground.
+    private static readonly Color clrBg = Color.FromArgb(0x00, 0x00, 0x00);
+    private static readonly Color clrFg = Color.FromArgb(0x19, 0x7B, 0x30);
+    private static readonly Color clrSFg = Color.FromArgb(0xC0, 0xC0, 0xC0);
+    
+    // Maximum scale factor and control properties.
     private const uint MaxScaleFactor = 10000;
     private bool logarithmic;
-    private uint maximumLevel;
+    private uint maximumLevel = 32767;
     private uint markerPosition;
     private uint currentPosition;
     private bool active;
 
-    public MyIndicator()
+    // Constructor: Initializes default values and control properties.
+    public MyTracker()
     {
+        // Initialize default values
         logarithmic = false;
-        maximumLevel = 32767;
         markerPosition = 0;
         currentPosition = 0;
+        active = false; // Assuming default state is inactive
 
-        // some default colors
-        clrBg = Color.FromArgb(0x00, 0x00, 0x00);
-        clrFg = Color.FromArgb(0x19, 0x7B, 0x30);
-        clrSFg = Color.FromArgb(0xC0, 0xC0, 0xC0);
+        // Set initial control properties
+        SetStyle(ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
     }
 
+    // Reset: Resets tracker to default values.
     public void Reset()
     {
         logarithmic = false;
-        maximumLevel = 32767;
         markerPosition = 0;
         currentPosition = 0;
         Invalidate();
     }
 
+    // SetActive: Sets the active state of the tracker.
     public void SetActive(bool isActive)
     {
         active = isActive;
     }
 
+    // SetMaximumLevel: Sets the maximum level of the tracker.
     public void SetMaximumLevel(uint level)
     {
-        if (maximumLevel == level)
-            return;
-
-        maximumLevel = level;
-        markerPosition = ScaleLevel(markerPosition);
-        currentPosition = ScaleLevel(currentPosition);
-        Invalidate();
+        if (maximumLevel != level)
+        {
+            maximumLevel = level;
+            markerPosition = ScaleLevel(markerPosition);
+            currentPosition = ScaleLevel(currentPosition);
+            Invalidate();
+        }
     }
 
+    // SetMarkerLevel: Sets the marker level of the tracker.
     public void SetMarkerLevel(uint level)
     {
         uint position = ScaleLevel(level);
 
-        if (markerPosition == position)
-            return;
-
-        markerPosition = position;
-        Invalidate();
+        if (markerPosition != position)
+        {
+            markerPosition = position;
+            Invalidate();
+        }
     }
 
+    // SetCurrentLevel: Sets the current level of the tracker.
     public void SetCurrentLevel(uint level)
     {
         uint position = ScaleLevel(level);
 
-        if (currentPosition == position)
-            return;
-
-        currentPosition = position;
-        Invalidate();
+        if (currentPosition != position)
+        {
+            currentPosition = position;
+            Invalidate();
+        }
     }
 
+    // ScaleLevel: Scales the level based on maximum level and logarithmic flag.
     private uint ScaleLevel(uint level)
     {
         if (level > maximumLevel)
             level = maximumLevel;
 
-        if (logarithmic)
-            return level * MaxScaleFactor / maximumLevel;
-
-        // If not logarithmic, then we have to make it so!
-        return (uint)(Math.Log10(9.0 * level / maximumLevel + 1) * MaxScaleFactor);
+        return logarithmic ? level * MaxScaleFactor / maximumLevel : (uint)(Math.Log10(9.0 * level / maximumLevel + 1) * MaxScaleFactor);
     }
 
+    // OnPaint: Overrides base method to paint the tracker control.
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
 
         Graphics dc = e.Graphics;
-        Color clrCur = active ? clrFg : clrSFg;
+        Color fillColor = active ? clrFg : clrSFg;
 
         Rectangle bounds = ClientRectangle;
         dc.DrawRectangle(Pens.Black, bounds);
@@ -111,15 +112,12 @@ public class MyIndicator : Control
         leftSide.Height -= 1;
 
         if (level > 0)
-            dc.FillRectangle(new SolidBrush(clrCur), leftSide);
+            dc.FillRectangle(new SolidBrush(fillColor), leftSide);
 
         if (markerPosition > 0)
         {
             uint mark = markerPosition * (uint)bounds.Width / MaxScaleFactor;
-            if (mark < level)
-                dc.FillRectangle(new SolidBrush(clrBg), (int)mark, leftSide.Y, 2, leftSide.Height - 1);
-            else
-                dc.FillRectangle(new SolidBrush(clrCur), (int)mark, leftSide.Y, 2, leftSide.Height - 1);
+            dc.FillRectangle(new SolidBrush(mark < level ? clrBg : fillColor), (int)mark, leftSide.Y, 2, leftSide.Height - 1);
         }
     }
 }
